@@ -7,11 +7,11 @@ The vocabulary changes are modelled using the W3C [Activity Streams 2](https://w
 The data processing workflow is built as an [RDF-Connect](https://rdf-connect.github.io/) pipeline that performs several data transformation steps, which include:
 
 - Raw vocabulary fetching over HTTP
-- SHACL-based change detection and semantic labeling with Activity Streams 2
+- Change detection and semantic labeling with Activity Streams 2
 - Fragmentation based on temporal constraints
-- Ingestion into a given data store system
+- Ingestion into a target data store system
 
-The publishing is done via an instance of the [ldes-server](github.com/rdf-connect/LDES-Solid-Server), which sits on top of the data store used by the RDF-Connect pipeline to write the data. 
+The publishing is done via an instance of the [ldes-server](github.com/rdf-connect/ldes-server), which sits on top of the data store used by the RDF-Connect pipeline to write the data. 
 
 ## System components and architecture
 
@@ -19,7 +19,19 @@ The publishing is done via an instance of the [ldes-server](github.com/rdf-conne
 
 ## How to run it?
 
-`TODO:` describe the steps to run without Docker
+To run the pipeline locally, you need to make sure all the required components are up and running. These include:
+
+- A Redis or MongoDB instance (see [/datastore](./datastore/) for more information)
+- An instance of the ldes-server (see [/ldes-server](./ldes-server/) for more information)
+- Optionally, an Varnish instance for caching (see [/varnish](./varnish/) for more information)
+
+Next, you need to configure all the environment variables in the [`conf.env`](./conf.env) file according to your local setup.
+
+Finally, you can an execution loop of the pipeline, that will fetch all versions of a given vocabulary (see [run.sh](./run.sh)) with:
+
+```bash
+./run.sh 
+```
 
 ### With Docker
 
@@ -29,4 +41,4 @@ This pipeline and the necessary data storage and interface components are contai
 $ docker-compose up --build 
 ```
 
-The [`conf.env`](https://github.com/rdf-connect/OP-vocab-feed/blob/main/conf.env) file contains the main configuration variables to be set.
+The [`conf.env`](./conf.env) file contains the main configuration variables to be set.
