@@ -11,17 +11,12 @@ This system component provides a container with an implementation of an LDES ser
 npm install
 ```
 
-3. Make sure that the environment variables in the `config-ldes.json` file are set to the desired values. These include:
-
-- `STORE_TYPE`: The type of data store to use. Options are `redis` and `mongodb`.
-- `STORE_URL`: The URL of the data store.
-- `LDES_BASE_URL`: The base URL of the LDES server.
-- `LDES_URL_PATH`: The URL path of the LDES server.
+3. Make sure that the environment variables in the [`conf.env`](../conf.env) file are set to the desired values. These include:
 
 4. Start the server by running the following command:
 
 ```bash
-npx @solid/community-server -c ./config-ldes.json -b http://localhost:3000
+./run-without-docker.sh
 ```
 
 ## Run with Docker
