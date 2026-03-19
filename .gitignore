@@ -1,0 +1,5 @@
+*/**/node_modules
+datastore/dump.rdb
+pipeline/test-pipeline.ttl
+pipeline/state/*
+!pipeline/state/.keep

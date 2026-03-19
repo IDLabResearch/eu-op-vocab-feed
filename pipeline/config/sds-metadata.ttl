@@ -1,0 +1,31 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix dcat: <http://www.w3.org/ns/dcat#>.
+@prefix tree: <https://w3id.org/tree#>.
+@prefix ldes: <https://w3id.org/ldes#>.
+@prefix p-plan: <http://purl.org/net/p-plan#>.
+@prefix sds: <https://w3id.org/sds#>.
+@prefix sh: <http://www.w3.org/ns/shacl#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix at: <http://publications.europa.eu/ontology/authority/>.
+@prefix as: <https://www.w3.org/ns/activitystreams#>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+
+<${LDES_BASE_URL}${LDES_URL_PATH}> a sds:Stream;
+  p-plan:wasGeneratedBy [
+    a p-plan:Activity;
+    rdfs:comment "Data processing workflow to transform and publish Publications Office controlled vocabularies as LDES";
+  ];
+  sds:carries [
+    a sds:Member;
+    sds:shape <https://semiceu.github.io/LDES-DCAT-AP-feeds/shape.ttl#ActivityShape>;
+  ];
+  sds:dataset [
+    a dcat:Dataset;
+    dcat:title "EU Publications Office vocabulary feed";
+    dcat:publisher <http://julianrojas.org#me>;
+    ldes:timestampPath as:published;
+    tree:shape <https://semiceu.github.io/LDES-DCAT-AP-feeds/shape.ttl#ActivityShape>;
+    dcat:identifier <${LDES_BASE_URL}${LDES_URL_PATH}>;
+    #dcat:identifier <http://localhost:8080/op-vocab-feed>;
+  ].
+

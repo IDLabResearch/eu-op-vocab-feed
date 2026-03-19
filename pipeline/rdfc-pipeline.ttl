@@ -1,0 +1,135 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix rdfc: <https://w3id.org/rdf-connect#>.
+@prefix tree: <https://w3id.org/tree#>.
+@prefix dct: <http://purl.org/dc/terms/>.
+@prefix sh: <http://www.w3.org/ns/shacl#>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+@prefix as: <https://www.w3.org/ns/activitystreams#>.
+
+#########################################
+### Import runners and processors
+#########################################
+<> owl:imports <./node_modules/@rdfc/js-runner/index.ttl>,
+  <./node_modules/@rdfc/file-utils-processors-ts/processors.ttl>,
+  <./node_modules/@rdfc/http-utils-processor-ts/processors.ttl>,
+  <./node_modules/@rdfc/dumps-to-feed-processor-ts/processor.ttl>,
+  <./node_modules/@rdfc/sds-processors-ts/configs/sdsify.ttl>,
+  <./node_modules/@rdfc/sds-processors-ts/configs/bucketizer.ttl>,
+  <./node_modules/@rdfc/sds-storage-writer-ts/processor.ttl>.
+
+#########################################
+# Channel definitions
+#########################################
+# Data channel from rdfc:HttpFetch to rdfc:DumpsToFeed
+<rawData> a rdfc:Reader, rdfc:Writer.
+
+# Data channel from rdfc:GlobRead to rdfc:DumpsToFeed
+<query> a rdfc:Reader, rdfc:Writer.
+
+# Data channel from rdfc:DumpsToFeed to rdfc:Bucketize
+<asStream> a rdfc:Reader, rdfc:Writer.
+
+# Data channel from rdfc:Sdsify to rdfc:Bucketize
+<sdsMembers> a rdfc:Reader, rdfc:Writer.
+
+# Channel from rdfc:Bucketize to rdfc:Ingest
+<bucketizedMembers> a rdfc:Reader, rdfc:Writer.
+
+# Metadata channel from rdfc:GlobRead to rdfc:Bucketize
+<metadata1> a rdfc:Reader, rdfc:Writer.
+
+# Metadata channel from rdfc:Bucketize to rdfc:Ingest
+<metadata2> a rdfc:Reader, rdfc:Writer.
+
+#########################################
+### Define the pipeline
+#########################################
+<> a rdfc:Pipeline;
+  rdfc:consistsOf [
+    rdfc:instantiates rdfc:NodeRunner;
+    rdfc:processor <fetcher>,
+      <queryReader>,
+      <changeDetector>,
+      <sdsAnnotator>,
+      <metadataReader>,
+      <bucketizer>,
+      <ingestor>;
+  ].
+
+#########################################
+# Processor definitions
+#########################################
+# HTTP fetch processor for the data dump that is to be processed
+<fetcher> a rdfc:HttpFetch;
+  rdfc:url "${VOCAB_SOURCE}";
+  rdfc:writer <rawData>;
+  rdfc:options [
+    rdfc:closeOnEnd "true"^^xsd:boolean;
+    rdfc:outputAsStream "true"^^xsd:boolean;
+  ].
+
+# File reader processor for reading the SPARQL query that will extract the focus nodes
+<queryReader> a rdfc:GlobRead;
+  rdfc:glob "./config/query.rq";
+  rdfc:output <query>;
+  rdfc:closeOnEnd "true"^^xsd:boolean.
+
+# Processor to read member events from a LDES
+<changeDetector> a rdfc:DumpsToFeed;
+  rdfc:dump <rawData>;
+  rdfc:readAsStream "true"^^xsd:boolean;
+  rdfc:output <asStream>;
+  rdfc:feedname "op-vocab-feed";
+  rdfc:flush "false"^^xsd:boolean;
+  rdfc:dumpContentType "application/rdf+xml";
+  rdfc:focusNodesStrategy "sparql";
+  rdfc:focusNodes <query>;
+  rdfc:nodeShapeIri "./config/shape.ttl";
+  rdfc:dbDir "./state/".
+
+<sdsAnnotator> a rdfc:Sdsify;
+  rdfc:input <asStream>;
+  rdfc:readAsStream "true"^^xsd:boolean;
+  rdfc:output <sdsMembers>;
+  rdfc:stream "${LDES_BASE_URL}${LDES_URL_PATH}";
+  rdfc:typeFilter as:Create, as:Update, as:Delete.
+
+# File reader processor for metadata input on rdfc:Bucketize
+<metadataReader> a rdfc:GlobRead;
+  rdfc:glob "./config/sds-metadata-run.ttl";
+  rdfc:output <metadata1>;
+  rdfc:closeOnEnd "true"^^xsd:boolean.
+
+# Processor to bucketize the data
+<bucketizer> a rdfc:Bucketize;
+  rdfc:channels [
+    rdfc:dataInput <sdsMembers>;
+    rdfc:dataOutput <bucketizedMembers>;
+    rdfc:metadataInput <metadata1>;
+    rdfc:metadataOutput <metadata2>;
+  ];
+  rdfc:bucketizeStrategy ( [
+    a tree:TimebasedFragmentation;
+    tree:timestampPath as:published;
+    tree:maxSize 100;
+    tree:k 4;
+    # 10 mins
+    tree:minBucketSpan 600;
+  ] );
+  rdfc:savePath "./state/bucketize-state.json";
+  rdfc:outputStreamId "${LDES_BASE_URL}${LDES_URL_PATH}".
+
+# Processor to persist the bucketized SDS stream into a data storage system
+<ingestor> a rdfc:IngestSDS;
+  rdfc:dataInput <bucketizedMembers>;
+  rdfc:metadataInput <metadata2>;
+  rdfc:database [
+    a rdfc:DatabaseConfig;
+    rdfc:url "${STORE_TYPE}://${STORE_URL}";
+    #rdfc:url "redis://default:mypassword@192.168.0.178:6379";
+    rdfc:metadata "METADATA";
+    rdfc:data "DATA";
+    rdfc:index "INDEX";
+  ].
+
