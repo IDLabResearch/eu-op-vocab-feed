@@ -3,3 +3,4 @@ datastore/dump.rdb
 pipeline/test-pipeline.ttl
 pipeline/state/*
 !pipeline/state/.keep
+ldes-server/config-ldes-run.json

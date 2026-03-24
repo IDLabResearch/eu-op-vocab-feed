@@ -25,7 +25,6 @@
     dcat:publisher <http://julianrojas.org#me>;
     ldes:timestampPath as:published;
     tree:shape <https://semiceu.github.io/LDES-DCAT-AP-feeds/shape.ttl#ActivityShape>;
-    dcat:identifier <${LDES_BASE_URL}${LDES_URL_PATH}>;
-    #dcat:identifier <http://localhost:8080/op-vocab-feed>;
+    dcat:identifier <${LDES_BASE_URL}${LDES_URL_PATH}>
   ].
 
